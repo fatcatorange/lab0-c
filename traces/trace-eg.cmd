@@ -7,12 +7,12 @@ new
 # See how long it is
 size
 # Fill it with some values.  First at the head
-ih dolphin
-ih bear
-ih gerbil
+ih abc
+ih def
 # Now at the tail
 it meerkat
 it bear
+sort
 # Reverse it
 reverse
 # See how long it is
