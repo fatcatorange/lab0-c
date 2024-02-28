@@ -15,6 +15,7 @@ it bear
 it jimmy
 # aftersort
 sort
+reverseK 5
 # swap
 swap
 # Reverse it
