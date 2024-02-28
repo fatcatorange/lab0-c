@@ -167,13 +167,14 @@ bool q_delete_mid(struct list_head *head)
 /* Delete all nodes that have duplicate string */
 bool q_delete_dup(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
     return true;
 }
 
 /* Swap every two adjacent nodes */
 void q_swap(struct list_head *head)
 {
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
     /*the list_head l1 is the first item need to be swap,l2 is the second*/
     struct list_head *l1 = head->next;
     struct list_head *l2 = head->next->next;
@@ -356,16 +357,54 @@ void q_sort(struct list_head *head, bool descend)
  * the right side of it */
 int q_ascend(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    return 0;
+    if (!head || list_empty(head) || list_is_singular(head))
+        return q_size(head);
+
+    struct list_head *tail = head->prev;
+    struct list_head *now = tail;
+    element_t *min = list_entry(tail, element_t, list);
+
+    while (now != head) {
+        if (strcmp(list_entry(now, element_t, list)->value, min->value) > 0) {
+            struct list_head *tmp;
+            tmp = now->prev;
+            list_del(now);
+            q_release_element(list_entry(now, element_t, list));
+            now = tmp;
+        } else {
+            min = list_entry(now, element_t, list);
+            now = now->prev;
+        }
+    }
+
+    return q_size(head);
 }
 
 /* Remove every node which has a node with a strictly greater value anywhere to
  * the right side of it */
 int q_descend(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    return 0;
+    if (!head || list_empty(head) || list_is_singular(head))
+        return q_size(head);
+
+    struct list_head *tail = head->prev;
+    struct list_head *now = tail;
+    element_t *max = list_entry(tail, element_t, list);
+
+    while (now != head) {
+        if (strcmp(list_entry(now, element_t, list)->value, max->value) < 0) {
+            struct list_head *tmp;
+            tmp = now->prev;
+            list_del(now);
+            q_release_element(list_entry(now, element_t, list));
+            now = tmp;
+        } else {
+            max = list_entry(now, element_t, list);
+            now = now->prev;
+        }
+    }
+
+    return q_size(head);
 }
 
 /* Merge all the queues into one sorted queue, which is in ascending/descending

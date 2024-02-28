@@ -9,13 +9,14 @@ size
 # Fill it with some values.  First at the head
 ih abc
 ih def
+ih ssj
 # Now at the tail
 it meerkat
 it bear
 it jimmy
-# aftersort
-sort
-reverseK 5
+
+# ascend
+ascend
 # swap
 swap
 # Reverse it
