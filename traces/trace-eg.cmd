@@ -12,7 +12,11 @@ ih def
 # Now at the tail
 it meerkat
 it bear
+it jimmy
+# aftersort
 sort
+# swap
+swap
 # Reverse it
 reverse
 # See how long it is
