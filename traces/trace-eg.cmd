@@ -10,13 +10,17 @@ size
 ih abc
 ih def
 ih ssj
+ih jimmy
+ih jimmy 
+ih jimmy
 # Now at the tail
 it meerkat
 it bear
 it jimmy
-
-# ascend
-ascend
+# sortQ
+sort
+# dedup
+dedup
 # swap
 swap
 # Reverse it
