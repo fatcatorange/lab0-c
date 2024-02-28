@@ -12,12 +12,12 @@ ih def
 ih ssj
 ih jimmy
 ih jimmy 
-ih jimmy
+ih immy
 # Now at the tail
 it meerkat
 it bear
 it jimmy
-# sortQ
+# sortA
 sort
 # dedup
 dedup

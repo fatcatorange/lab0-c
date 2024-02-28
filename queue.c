@@ -102,8 +102,10 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     if (!temp) {
         return NULL;
     }
-    if (sp)
+    if (sp) {
         strncpy(sp, list_entry(head->next, element_t, list)->value, bufsize);
+        sp[bufsize - 1] = '\0';
+    }
 
     list_del_init(head->next);
     return temp;
@@ -121,8 +123,10 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
         return NULL;
     }
 
-    if (sp)
+    if (sp) {
         strncpy(sp, list_entry(head->prev, element_t, list)->value, bufsize);
+        sp[bufsize - 1] = '\0';
+    }
 
     list_del_init(head->prev);
 
