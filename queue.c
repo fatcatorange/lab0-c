@@ -151,19 +151,17 @@ int q_size(struct list_head *head)
 /* Delete the middle node in queue */
 bool q_delete_mid(struct list_head *head)
 {
-    if (!head || list_empty(head))
-        return false;
+    struct list_head *slow = head->next;
+    struct list_head *fast = head->next;
 
-    int size = q_size(head);
-    size /= 2;
+    while (fast->next != head && fast->next->next != head) {
+        fast = fast->next->next;
+        slow = slow->next;
+    }
 
-    struct list_head *now = head;
-    for (int i = 0; i <= size; i++)
-        now = now->next;
+    list_del_init(slow);
 
-    list_del_init(now);
-
-    q_release_element(list_entry(now, element_t, list));
+    q_release_element(list_entry(slow, element_t, list));
 
     return true;
 }
