@@ -23,6 +23,7 @@
 #include "list.h"
 #include "random.h"
 
+
 /* Shannon entropy */
 extern double shannon_entropy(const uint8_t *input_data);
 extern int show_entropy;
@@ -42,9 +43,8 @@ extern int show_entropy;
  * OK as long as head field of queue_t structure is in first position in
  * solution code
  */
-#include "queue.h"
-
 #include "console.h"
+#include "queue.h"
 #include "report.h"
 
 /* Settable parameters */
@@ -1012,6 +1012,60 @@ static bool do_next(int argc, char *argv[])
     return q_show(0);
 }
 
+
+
+void q_shuffle(struct list_head *head)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+
+    srand(time(NULL));
+    int len = q_size(head);
+
+    while (len > 1) {
+        int r = rand() % len;
+        struct list_head *old = head->next;
+        struct list_head *new = head->prev;
+
+        for (int i = 0; i < r; i++) {
+            old = old->next;
+        }
+
+        while (new == old) {
+            new = new->prev;
+        }
+
+        struct list_head *tmp = old->prev;
+        list_move(old, new);
+        list_move(new, tmp);
+        len--;
+    }
+}
+
+static bool do_shuffle(int argc, char *argv[])
+{
+    if (argc != 1) {
+        report(1, "%s takes no arguments", argv[0]);
+        return false;
+    }
+
+    if (!current || !current->q) {
+        report(3, "Warning: Try to access null queue");
+        return false;
+    }
+    error_check();
+
+    set_noallocate_mode(true);
+    if (exception_setup(true))
+        q_shuffle(current->q);
+    exception_cancel();
+
+    set_noallocate_mode(false);
+
+    q_show(3);
+    return !error_check();
+}
+
 static void console_init()
 {
     ADD_COMMAND(new, "Create new queue", "");
@@ -1052,6 +1106,7 @@ static void console_init()
                 "");
     ADD_COMMAND(reverseK, "Reverse the nodes of the queue 'K' at a time",
                 "[K]");
+    ADD_COMMAND(shuffle, "Shuffle all nodes value", "");
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);
     add_param("malloc", &fail_probability, "Malloc failure probability percent",

@@ -1,7 +1,6 @@
 # Test of insert_head, insert_tail, remove_head, reverse and merge
 option fail 0
 option malloc 0
-show
 new
 ih a
 ih r
