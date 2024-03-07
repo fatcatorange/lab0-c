@@ -1018,27 +1018,18 @@ void q_shuffle(struct list_head *head)
 {
     if (!head || list_empty(head) || list_is_singular(head))
         return;
+    int size = q_size(head);
 
-    srand(time(NULL));
-    int len = q_size(head);
+    while (size) {
+        struct list_head *now = head->next;
 
-    while (len > 1) {
-        int r = rand() % len;
-        struct list_head *old = head->next;
-        struct list_head *new = head->prev;
-
-        for (int i = 0; i < r; i++) {
-            old = old->next;
+        int idx = rand() % size;
+        for (int i = 0; i < idx; i++) {
+            now = now->next;
         }
 
-        while (new == old) {
-            new = new->prev;
-        }
-
-        struct list_head *tmp = old->prev;
-        list_move(old, new);
-        list_move(new, tmp);
-        len--;
+        list_move_tail(now, head);
+        size--;
     }
 }
 
