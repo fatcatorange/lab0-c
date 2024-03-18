@@ -73,7 +73,7 @@ static int fail_count = 0;
 
 static int string_length = MAXSTRING;
 
-static int descend = 0;
+static int descend = 1;
 
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
@@ -1012,7 +1012,56 @@ static bool do_next(int argc, char *argv[])
     return q_show(0);
 }
 
+void list_sort(struct list_head *head, bool descend);
+bool do_list_sort(int argc, char *argv[])
+{
+    if (argc != 1) {
+        report(1, "%s takes no arguments", argv[0]);
+        return false;
+    }
 
+    int cnt = 0;
+    if (!current || !current->q)
+        report(3, "Warning: Calling sort on null queue");
+    else
+        cnt = q_size(current->q);
+    error_check();
+
+    if (cnt < 2)
+        report(3, "Warning: Calling sort on single node");
+    error_check();
+
+    set_noallocate_mode(true);
+    if (current && exception_setup(true))
+        list_sort(current->q, descend);
+    exception_cancel();
+    set_noallocate_mode(false);
+
+    bool ok = true;
+    if (current && current->size) {
+        for (struct list_head *cur_l = current->q->next;
+             cur_l != current->q && --cnt; cur_l = cur_l->next) {
+            /* Ensure each element in ascending/descending order */
+            element_t *item, *next_item;
+            item = list_entry(cur_l, element_t, list);
+            next_item = list_entry(cur_l->next, element_t, list);
+            if (!descend && strcmp(item->value, next_item->value) > 0) {
+                report(1, "ERROR: Not sorted in ascending order");
+                ok = false;
+                break;
+            }
+
+            if (descend && strcmp(item->value, next_item->value) < 0) {
+                report(1, "ERROR: Not sorted in descending order");
+                ok = false;
+                break;
+            }
+        }
+    }
+
+    q_show(3);
+    return ok && !error_check();
+}
 
 void q_shuffle(struct list_head *head)
 {
@@ -1057,6 +1106,63 @@ static bool do_shuffle(int argc, char *argv[])
     return !error_check();
 }
 
+bool write_in(struct list_head *head)
+{
+    if (!head) {
+        return false;
+    }
+    FILE *fptr;
+    fptr = fopen("data.txt", "r");
+    if (!fptr) {
+        return false;
+    }
+    char str[100];
+    while (fgets(str, sizeof(str), fptr)) {
+        if (str == NULL) {
+            return true;
+        }
+        for (int i = 0; i < 100; i++) {
+            if (str[i] == '\n') {
+                str[i] = '\0';
+                break;
+            }
+        }
+        q_insert_tail(head, str);
+        current->size++;
+    }
+    fclose(fptr);
+    q_show(3);
+    return true;
+}
+
+static bool do_write_in()
+{
+    return write_in(current->q);
+}
+
+bool write_out(struct list_head *head)
+{
+    if (!head)
+        return false;
+    FILE *fptr;
+    fptr = fopen("data.txt", "w");
+    if (fptr == NULL) {
+        return false;
+    }
+    element_t *entry;
+    list_for_each_entry (entry, head, list) {
+        fprintf(fptr, "%s\n", entry->value);
+    }
+    fclose(fptr);
+    return true;
+}
+
+static bool do_write_out()
+{
+    return write_out(current->q);
+}
+
+
 static void console_init()
 {
     ADD_COMMAND(new, "Create new queue", "");
@@ -1081,6 +1187,7 @@ static void console_init()
         "[str]");
     ADD_COMMAND(reverse, "Reverse queue", "");
     ADD_COMMAND(sort, "Sort queue in ascending/descening order", "");
+    ADD_COMMAND(list_sort, "Sort queue in ascending/descening order", "");
     ADD_COMMAND(size, "Compute queue size n times (default: n == 1)", "[n]");
     ADD_COMMAND(show, "Show queue contents", "");
     ADD_COMMAND(dm, "Delete middle node in queue", "");
@@ -1098,6 +1205,8 @@ static void console_init()
     ADD_COMMAND(reverseK, "Reverse the nodes of the queue 'K' at a time",
                 "[K]");
     ADD_COMMAND(shuffle, "Shuffle all nodes value", "");
+    ADD_COMMAND(write_out, "Write out data", "");
+    ADD_COMMAND(write_in, "Write in data", "");
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);
     add_param("malloc", &fail_probability, "Malloc failure probability percent",
