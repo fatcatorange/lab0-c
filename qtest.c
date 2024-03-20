@@ -73,7 +73,7 @@ static int fail_count = 0;
 
 static int string_length = MAXSTRING;
 
-static int descend = 1;
+static int descend = 0;
 
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
