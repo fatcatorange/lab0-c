@@ -131,7 +131,6 @@ int web_open(int port)
     /* Create a socket descriptor */
     if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         return -1;
-
     /* Eliminates "Address already in use" error from bind. */
     if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (const void *) &optval,
                    sizeof(int)) < 0)

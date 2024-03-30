@@ -915,7 +915,6 @@ static int line_edit(int stdin_fd,
                      const char *prompt)
 {
     struct line_state l;
-
     /* Populate the linenoise state that we pass to functions implementing
      * specific editing functionalities.
      */
@@ -939,7 +938,6 @@ static int line_edit(int stdin_fd,
      * initially is just an empty string.
      */
     line_history_add("");
-
     if (write(l.ofd, prompt, l.plen) == -1)
         return -1;
     while (1) {
@@ -1147,7 +1145,6 @@ static int line_raw(char *buf, size_t buflen, const char *prompt)
         errno = EINVAL;
         return -1;
     }
-
     if (enable_raw_mode(STDIN_FILENO) == -1)
         return -1;
     int count = line_edit(STDIN_FILENO, STDOUT_FILENO, buf, buflen, prompt);
@@ -1218,7 +1215,6 @@ char *linenoise(const char *prompt)
     } else if (is_unsupported_term()) {
         size_t len;
 
-        printf("%s", prompt);
         fflush(stdout);
         if (!fgets(buf, LINENOISE_MAX_LINE, stdin))
             return NULL;

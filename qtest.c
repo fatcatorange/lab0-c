@@ -75,6 +75,8 @@ static int string_length = MAXSTRING;
 
 static int descend = 0;
 
+static int sorting_type = 0;
+
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
 static const char charset[] = "abcdefghijklmnopqrstuvwxyz";
@@ -579,6 +581,9 @@ static bool do_size(int argc, char *argv[])
     return ok && !error_check();
 }
 
+void list_sort(struct list_head *head, bool descend);
+void timsort(struct list_head *head, bool descend);
+
 bool do_sort(int argc, char *argv[])
 {
     if (argc != 1) {
@@ -598,8 +603,16 @@ bool do_sort(int argc, char *argv[])
     error_check();
 
     set_noallocate_mode(true);
-    if (current && exception_setup(true))
-        q_sort(current->q, descend);
+    if (current && exception_setup(true)) {
+        if (sorting_type == 0)
+            q_sort(current->q, descend);
+        else if (sorting_type == 1) {
+            list_sort(current->q, descend);
+        } else {
+            timsort(current->q, descend);
+        }
+    }
+
     exception_cancel();
     set_noallocate_mode(false);
 
@@ -1012,56 +1025,6 @@ static bool do_next(int argc, char *argv[])
     return q_show(0);
 }
 
-void list_sort(struct list_head *head, bool descend);
-bool do_list_sort(int argc, char *argv[])
-{
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
-        return false;
-    }
-
-    int cnt = 0;
-    if (!current || !current->q)
-        report(3, "Warning: Calling sort on null queue");
-    else
-        cnt = q_size(current->q);
-    error_check();
-
-    if (cnt < 2)
-        report(3, "Warning: Calling sort on single node");
-    error_check();
-
-    set_noallocate_mode(true);
-    if (current && exception_setup(true))
-        list_sort(current->q, descend);
-    exception_cancel();
-    set_noallocate_mode(false);
-
-    bool ok = true;
-    if (current && current->size) {
-        for (struct list_head *cur_l = current->q->next;
-             cur_l != current->q && --cnt; cur_l = cur_l->next) {
-            /* Ensure each element in ascending/descending order */
-            element_t *item, *next_item;
-            item = list_entry(cur_l, element_t, list);
-            next_item = list_entry(cur_l->next, element_t, list);
-            if (!descend && strcmp(item->value, next_item->value) > 0) {
-                report(1, "ERROR: Not sorted in ascending order");
-                ok = false;
-                break;
-            }
-
-            if (descend && strcmp(item->value, next_item->value) < 0) {
-                report(1, "ERROR: Not sorted in descending order");
-                ok = false;
-                break;
-            }
-        }
-    }
-
-    q_show(3);
-    return ok && !error_check();
-}
 
 void q_shuffle(struct list_head *head)
 {
@@ -1187,12 +1150,11 @@ static void console_init()
         "[str]");
     ADD_COMMAND(reverse, "Reverse queue", "");
     ADD_COMMAND(sort, "Sort queue in ascending/descening order", "");
-    ADD_COMMAND(list_sort, "Sort queue in ascending/descening order", "");
     ADD_COMMAND(size, "Compute queue size n times (default: n == 1)", "[n]");
     ADD_COMMAND(show, "Show queue contents", "");
     ADD_COMMAND(dm, "Delete middle node in queue", "");
     ADD_COMMAND(dedup, "Delete all nodes that have duplicate string", "");
-    ADD_COMMAND(merge, "Merge all the queues into one sorted queue", "");
+    ADD_COMMAND(merge, "Merge all the queues into one sorted queue", "str");
     ADD_COMMAND(swap, "Swap every two adjacent nodes in queue", "");
     ADD_COMMAND(ascend,
                 "Remove every node which has a node with a strictly less "
@@ -1215,6 +1177,10 @@ static void console_init()
               "Number of times allow queue operations to return false", NULL);
     add_param("descend", &descend,
               "Sort and merge queue in ascending/descending order", NULL);
+    add_param("sort_type", &sorting_type,
+              "Which sort does the user want to use, 0 for q_sort, 1 for "
+              "list_sort, 2 for tim_sort",
+              NULL);
 }
 
 /* Signal handlers */

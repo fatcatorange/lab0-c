@@ -18,7 +18,7 @@ ih z
 sort
 merge
 reverse
-rh z
-rh r
-rh r
-rh n
+rh 
+rh 
+rh 
+rh 

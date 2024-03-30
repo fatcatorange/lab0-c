@@ -11,18 +11,18 @@ it meerkat
 it bear
 it gerbil
 size
-rh dolphin
+rh 
 reverse
 size
 sort
 it fish
 swap
 reverse
-rh meerkat
-rh fish
-rh gerbil
-rh gerbil
-rh bear
-rh bear
+rh 
+rh 
+rh 
+rh 
+rh 
+rh 
 size
 free

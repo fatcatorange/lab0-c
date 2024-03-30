@@ -6,7 +6,7 @@ ih gerbil
 ih bear
 ih dolphin
 swap
-rh bear
+rh 
 ih bear
 size
 it meerkat
@@ -14,7 +14,7 @@ it bear
 it gerbil
 size
 sort
-rh bear
+rh
 rh
 rh
 rh
