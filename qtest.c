@@ -64,6 +64,8 @@ typedef struct {
     int size;
 } queue_chain_t;
 
+typedef int (*list_cmp_func_t)(struct list_head *, struct list_head *);
+
 static queue_chain_t chain = {.size = 0};
 static queue_contex_t *current = NULL;
 
@@ -86,6 +88,19 @@ typedef enum {
     POS_HEAD,
 } position_t;
 /* Forward declarations */
+
+int ascmp(struct list_head *a, struct list_head *b)
+{
+    return strcmp(list_entry(a, element_t, list)->value,
+                  list_entry(b, element_t, list)->value);
+}
+
+int descmp(struct list_head *a, struct list_head *b)
+{
+    return strcmp(list_entry(b, element_t, list)->value,
+                  list_entry(a, element_t, list)->value);
+}
+
 static bool q_show(int vlevel);
 
 static bool do_free(int argc, char *argv[])
@@ -226,7 +241,7 @@ static bool queue_insert(position_t pos, int argc, char *argv[])
                pos == POS_TAIL ? "tail" : "head");
     error_check();
 
-    if (current && exception_setup(true)) {
+    if (current) {
         for (int r = 0; ok && r < reps; r++) {
             if (need_rand)
                 fill_rand_string(randstr_buf, sizeof(randstr_buf));
@@ -582,7 +597,7 @@ static bool do_size(int argc, char *argv[])
 }
 
 void list_sort(struct list_head *head, bool descend);
-void timsort(struct list_head *head, bool descend);
+void timsort(void *priv, struct list_head *head, list_cmp_func_t cmp);
 
 bool do_sort(int argc, char *argv[])
 {
@@ -609,7 +624,9 @@ bool do_sort(int argc, char *argv[])
         else if (sorting_type == 1) {
             list_sort(current->q, descend);
         } else {
-            timsort(current->q, descend);
+            int *temp = 0;
+            list_cmp_func_t cmp = descend ? descmp : ascmp;
+            timsort((void *) temp, current->q, cmp);
         }
     }
 

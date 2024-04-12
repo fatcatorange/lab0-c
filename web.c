@@ -80,7 +80,6 @@ static ssize_t writen(int fd, void *usrbuf, size_t n)
 {
     size_t nleft = n;
     char *bufp = usrbuf;
-
     while (nleft > 0) {
         ssize_t nwritten = write(fd, bufp, nleft);
         if (nwritten <= 0) {
@@ -219,7 +218,7 @@ char *web_recv(int fd, struct sockaddr_in *clientaddr)
 {
     http_request_t req;
     parse_request(fd, &req);
-
+    printf("%s\n", req.filename);
     char *p = req.filename;
     /* Change '/' to ' ' */
     while (*p) {
@@ -227,6 +226,14 @@ char *web_recv(int fd, struct sockaddr_in *clientaddr)
         if (*p == '/')
             *p = ' ';
     }
+
+    char *temp = malloc(10 * sizeof(char));
+    for (int i = 0; i < 10; i++) {
+        temp[i] = 'a' + i;
+    }
+    temp[9] = '\0';
+    printf("%s", temp);
+
     char *ret = malloc(strlen(req.filename) + 1);
     strncpy(ret, req.filename, strlen(req.filename) + 1);
 
@@ -254,8 +261,8 @@ int web_eventmux(char *buf)
         socklen_t clientlen = sizeof(clientaddr);
         int web_connfd =
             accept(server_fd, (struct sockaddr *) &clientaddr, &clientlen);
-
         char *p = web_recv(web_connfd, &clientaddr);
+        printf("%s\n", p);
         char *buffer = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
         web_send(web_connfd, buffer);
         strncpy(buf, p, strlen(p) + 1);

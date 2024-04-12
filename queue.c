@@ -18,6 +18,9 @@
 
 
 /* Create an empty queue */
+
+typedef int (*list_cmp_func_t)(struct list_head *, struct list_head *);
+
 struct list_head *q_new()
 {
     struct list_head *lh = malloc(sizeof(struct list_head));
@@ -670,7 +673,6 @@ void list_sort(struct list_head *head, bool descend)
 }
 
 
-
 static inline size_t run_size(struct list_head *head)
 {
     if (!head)
@@ -686,18 +688,17 @@ struct pair {
 
 static size_t stk_size;
 
-static struct list_head *tim_merge(struct list_head *a,
-                                   struct list_head *b,
-                                   int des)
+static struct list_head *tim_merge(void *priv,
+                                   list_cmp_func_t cmp,
+                                   struct list_head *a,
+                                   struct list_head *b)
 {
     struct list_head *head = NULL;
     struct list_head **tail = &head;
 
     for (;;) {
         /* if equal, take 'a' -- important for sort stability */
-        if (des * strcmp(list_entry(a, element_t, list)->value,
-                         list_entry(b, element_t, list)->value) <=
-            0) {
+        if (cmp(a, b) <= 0) {
             *tail = a;
             tail = &(a->next);
             a = a->next;
@@ -734,18 +735,17 @@ static void build_prev_link(struct list_head *head,
     head->prev = tail;
 }
 
-static void tim_merge_final(struct list_head *head,
+static void tim_merge_final(void *priv,
+                            list_cmp_func_t cmp,
+                            struct list_head *head,
                             struct list_head *a,
-                            struct list_head *b,
-                            int des)
+                            struct list_head *b)
 {
     struct list_head *tail = head;
 
     for (;;) {
         /* if equal, take 'a' -- important for sort stability */
-        if (des * strcmp(list_entry(a, element_t, list)->value,
-                         list_entry(b, element_t, list)->value) <=
-            0) {
+        if (cmp(a, b) <= 0) {
             tail->next = a;
             a->prev = tail;
             tail = a;
@@ -768,7 +768,9 @@ static void tim_merge_final(struct list_head *head,
     build_prev_link(head, tail, b);
 }
 
-static struct pair find_run(struct list_head *list, int des)
+static struct pair find_run(void *priv,
+                            struct list_head *list,
+                            list_cmp_func_t cmp)
 {
     size_t len = 1;
     struct list_head *next = list->next, *head = list;
@@ -779,9 +781,7 @@ static struct pair find_run(struct list_head *list, int des)
         return result;
     }
 
-    if (des * strcmp(list_entry(list, element_t, list)->value,
-                     list_entry(next, element_t, list)->value) >
-        0) {
+    if (cmp(list, next) > 0) {
         /* decending run, also reverse the list */
         struct list_head *prev = NULL;
         do {
@@ -791,18 +791,14 @@ static struct pair find_run(struct list_head *list, int des)
             list = next;
             next = list->next;
             head = list;
-        } while (next &&
-                 des * strcmp(list_entry(list, element_t, list)->value,
-                              list_entry(next, element_t, list)->value) >
-                     0);
+        } while (next && cmp(list, next) > 0);
         list->next = prev;
     } else {
         do {
             len++;
             list = next;
             next = list->next;
-        } while (next && strcmp(list_entry(list, element_t, list)->value,
-                                list_entry(next, element_t, list)->value) > 0);
+        } while (next && cmp(list, next) <= 0);
         list->next = NULL;
     }
     head->prev = NULL;
@@ -811,30 +807,36 @@ static struct pair find_run(struct list_head *list, int des)
     return result;
 }
 
-static struct list_head *merge_at(struct list_head *at, int des)
+static struct list_head *merge_at(void *priv,
+                                  list_cmp_func_t cmp,
+                                  struct list_head *at)
 {
     size_t len = run_size(at) + run_size(at->prev);
     struct list_head *prev = at->prev->prev;
-    struct list_head *list = tim_merge(at->prev, at, des);
+    struct list_head *list = tim_merge(priv, cmp, at->prev, at);
     list->prev = prev;
     list->next->prev = (struct list_head *) len;
     --stk_size;
     return list;
 }
 
-static struct list_head *merge_force_collapse(struct list_head *tp, int des)
+static struct list_head *merge_force_collapse(void *priv,
+                                              list_cmp_func_t cmp,
+                                              struct list_head *tp)
 {
     while (stk_size >= 3) {
         if (run_size(tp->prev->prev) < run_size(tp)) {
-            tp->prev = merge_at(tp->prev, des);
+            tp->prev = merge_at(priv, cmp, tp->prev);
         } else {
-            tp = merge_at(tp, des);
+            tp = merge_at(priv, cmp, tp);
         }
     }
     return tp;
 }
 
-static struct list_head *merge_collapse(struct list_head *tp, int des)
+static struct list_head *merge_collapse(void *priv,
+                                        list_cmp_func_t cmp,
+                                        struct list_head *tp)
 {
     int n;
     while ((n = stk_size) >= 2) {
@@ -843,12 +845,12 @@ static struct list_head *merge_collapse(struct list_head *tp, int des)
             (n >= 4 && run_size(tp->prev->prev->prev) <=
                            run_size(tp->prev->prev) + run_size(tp->prev))) {
             if (run_size(tp->prev->prev) < run_size(tp)) {
-                tp->prev = merge_at(tp->prev, des);
+                tp->prev = merge_at(priv, cmp, tp->prev);
             } else {
-                tp = merge_at(tp, des);
+                tp = merge_at(priv, cmp, tp);
             }
         } else if (run_size(tp->prev) <= run_size(tp)) {
-            tp = merge_at(tp, des);
+            tp = merge_at(priv, cmp, tp);
         } else {
             break;
         }
@@ -857,15 +859,9 @@ static struct list_head *merge_collapse(struct list_head *tp, int des)
     return tp;
 }
 
-void timsort(struct list_head *head, bool descend)
+void timsort(void *priv, struct list_head *head, list_cmp_func_t cmp)
 {
     stk_size = 0;
-    int des;
-    if (descend == false) {
-        des = 1;
-    } else {
-        des = -1;
-    }
 
     struct list_head *list = head->next, *tp = NULL;
     if (head == head->prev)
@@ -876,16 +872,16 @@ void timsort(struct list_head *head, bool descend)
 
     do {
         /* Find next run */
-        struct pair result = find_run(list, des);
+        struct pair result = find_run(priv, list, cmp);
         result.head->prev = tp;
         tp = result.head;
         list = result.next;
         stk_size++;
-        tp = merge_collapse(tp, des);
+        tp = merge_collapse(priv, cmp, tp);
     } while (list);
 
     /* End of input; merge together all the runs. */
-    tp = merge_force_collapse(tp, des);
+    tp = merge_force_collapse(priv, cmp, tp);
 
     /* The final merge; rebuild prev links */
     struct list_head *stk0 = tp, *stk1 = stk0->prev;
@@ -895,5 +891,5 @@ void timsort(struct list_head *head, bool descend)
         build_prev_link(head, head, stk0);
         return;
     }
-    tim_merge_final(head, stk1, stk0, des);
+    tim_merge_final(priv, cmp, head, stk1, stk0);
 }

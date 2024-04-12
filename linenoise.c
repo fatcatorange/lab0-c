@@ -930,6 +930,8 @@ static int line_edit(int stdin_fd,
     l.maxrows = 0;
     l.history_index = 0;
 
+
+
     /* Buffer starts empty. */
     l.buf[0] = '\0';
     l.buflen--; /* Make sure there is always space for the nulterm */
@@ -937,6 +939,7 @@ static int line_edit(int stdin_fd,
     /* The latest history entry is always our current buffer, that
      * initially is just an empty string.
      */
+
     line_history_add("");
     if (write(l.ofd, prompt, l.plen) == -1)
         return -1;
@@ -944,13 +947,11 @@ static int line_edit(int stdin_fd,
         signed char c;
         int nread;
         char seq[5];
-
         if (eventmux_callback != NULL) {
             int result = eventmux_callback(l.buf);
             if (result != 0)
                 return result;
         }
-
         nread = read(l.ifd, &c, 1);
         if (nread <= 0)
             return l.len;
